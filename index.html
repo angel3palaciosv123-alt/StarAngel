@@ -283,7 +283,7 @@
 <div id="login-wrap">
   <div id="login-card">
     <div class="lg">👷🏽⚙️</div>
-    <h2>ANGEL TRESPALACIOS</h2>
+    <h2>TRESPLACIOS</h2>
     <div class="sub">SOLUCIONES AMBIENTALES PARA TUS PROYECTOS<br>PLATAFORMA DE DISEÑO DE PTAR</div>
     <label>USUARIO</label><input id="lg-u" autocomplete="username">
     <label>CONTRASEÑA</label><input id="lg-p" type="password" autocomplete="current-password">
@@ -301,10 +301,10 @@
   <button class="tab-btn" id="tab-q" onclick="irVista('q')">🚰 CAUDAL DE DISEÑO<span class="st" id="st-q">○</span></button>
   <button class="tab-btn" id="tab-rej" onclick="irVista('rej')">🔲 REJILLA<span class="st" id="st-rej">○</span></button>
   <button class="tab-btn" id="tab-m1" onclick="irVista('m1')">🏖️ ADUCCION</button>
-  <button class="tab-btn" id="tab-m2" onclick="irVista('m2')">🌀 SEDIM. PRIMARIO</button>
-  <button class="tab-btn" id="tab-m3" onclick="irVista('m3')">🧫 TRAT. BIOLÓGICO</button>
-  <button class="tab-btn" id="tab-m4" onclick="irVista('m4')">🌀 SEDIM. SECUNDARIO</button>
-  <button class="tab-btn" id="tab-m5" onclick="irVista('m5')">☀️ DESINFECCIÓN</button>
+  <button class="tab-btn" id="tab-m2" onclick="irVista('m2')">🌀 MODULO 5</button>
+  <button class="tab-btn" id="tab-m3" onclick="irVista('m3')">🧫 MODULO 6</button>
+  <button class="tab-btn" id="tab-m4" onclick="irVista('m4')">🌀 MODULO 6</button>
+  <button class="tab-btn" id="tab-m5" onclick="irVista('m5')">☀️ MODUL 7</button>
   <span class="sp"></span>
   <span class="tb-user" id="tb-user"></span>
   <button class="tb-out" onclick="lgSalir()">SALIR</button>
@@ -334,10 +334,9 @@
 
 <script>
 /* ==========================================================
-   PLATAFORMA PTAR — capa adicional (no modifica el motor de
-   proyección: solo lee `estado` y agrega ventanas nuevas)
+   PLATAFORMA PTAR
    ========================================================== */
-var USUARIOS={nathalia:{p:"nathalia",rol:"Diseñador",edita:true},angelito:{p:"angelito",rol:"Diseñador",edita:true},revisor:{p:"revisor",rol:"Revisor",edita:false}};
+var USUARIOS={nathalia:{p:"nathalia",rol:"Diseñador",edita:true},angelito:{p:"angelito",rol:"Diseñador",edita:true},lauri:{p:"lauri",rol:"Diseñador",edita:true},linoto:{p:"linoto",rol:"Diseñador",edita:true},revisor:{p:"revisor",rol:"Revisor",edita:false}};
 var SES=null;
 
 /* ---------- Estado del proyecto (TR + resultados) ---------- */
@@ -345,9 +344,9 @@ var PRO={
   diseñador:"",
   nombrePob:"", duracion:"", anioIni:"", pobProy:"", metodoPob:"",
   areaTotal:"", R:"", pUrb:"", pVias:"", pInd:"", pCom:"", pIns:"",
-  factorAf:"", coefAf:"", tipoInf:"", metMay:"",
-  nCanales:"", Vf:"", limpieza:"", inclina:"", anguloManual:"", grava:"",
-  forma:"", diamIn:"", bordeLibre:"", Hrh:"",
+  factorAf:"-", coefAf:"-", tipoInf:"-", metMay:"-",
+  nCanales:1, Vf:0.15, limpieza:"-", inclina:"", anguloManual:"", grava:"-",
+  forma:"-", diamIn:"", bordeLibre:"", Hrh:"",
   Q:null, REJ:null
 };
 try{var _g=localStorage.getItem("ptarProyecto"); if(_g) PRO=Object.assign(PRO,JSON.parse(_g));}catch(e){}
@@ -440,14 +439,14 @@ function actualizarEstados(){
   gid("st-rej").textContent = PRO.REJ?"●":"○";
 }
 function setPro(k,el,num){PRO[k]= num? (el.value===""?"":Number(el.value)) : el.value; guardarPro(); actualizarEstados();}
-var CONV='<div class="conv"><span><i class="dot d-ins"></i>Dato insertado</span><span><i class="dot d-cal"></i>Dato calculado</span><span><i class="dot d-bus"></i>Valor buscado en tabla RAS</span></div>';
+var CONV='<div class="conv"><span><i class="dot d-bus"></i>Dato insertado</span><span><i class="dot d-cal"></i>Dato calculado</span></div>';
 function campo(lbl,k,tipo,extra){
   var v=PRO[k]===""||PRO[k]===null||PRO[k]===undefined?"":PRO[k];
   return '<div class="campo"><label>'+lbl+'</label><input type="'+(tipo||"number")+'" placeholder="Ingrese un valor" value="'+v+'" oninput="setPro(\''+k+'\',this,'+(tipo==="text"?"false":"true")+')" '+(extra||"")+'></div>';
 }
 function campoPct(lbl,k,extra){
   var v=PRO[k]===""||PRO[k]===null||PRO[k]===undefined?"":rnd(PRO[k]*100,3);
-  return '<div class="campo"><label>'+lbl+' (%)</label><input type="number" placeholder="Ej: 62" value="'+v+'" oninput="setProPct(\''+k+'\',this)" '+(extra||"")+'></div>';
+  return '<div class="campo"><label>'+lbl+' (%)</label><input type="number" placeholder="-" value="'+v+'" oninput="setProPct(\''+k+'\',this)" '+(extra||"")+'></div>';
 }
 function setProPct(k,el){PRO[k]= el.value===""?"":Number(el.value)/100; guardarPro(); actualizarEstados();}
 function selec(lbl,k,ops){
@@ -492,26 +491,39 @@ function pintarTR(){
   if(sumaPct>1.001) errores.push("La suma de los porcentajes de área ("+nf(sumaPct*100,1)+"%) supera el 100 % del área total.");
   if(PRO.R!==""&&(Number(PRO.R)<R_RANGO[0]||Number(PRO.R)>R_RANGO[1])) errores.push("El coeficiente de retorno R = "+nf(Number(PRO.R),2)+" está fuera del rango recomendado por el RAS ("+nf(R_RANGO[0],2)+" – "+nf(R_RANGO[1],2)+").");
 
-  h+='<div class="card"><div class="card-title">Áreas y coeficientes</div>'+
-     '<div class="card-sub">Los porcentajes se ingresan directamente en % (ejemplo: 62 = 62 %).</div>'+
-     (errores.length?tarjetaErrores("Revisa estos valores:",errores):'')+
-     '<div class="row">'+campo("Área total población (Ha)","areaTotal")+campo("Coeficiente de retorno R","R","number",'step="0.01"')+
-     '<div class="campo"><label>Área urbana (Ha) — calculada</label><input value="'+(PRO.areaTotal&&PRO.pUrb!==""?nf(PRO.areaTotal*PRO.pUrb,2):"")+'" placeholder="—" readonly></div></div>'+
-     '<div class="row">'+campoPct("% Área urbana","pUrb")+campoPct("% Área vías","pVias")+
-     campoPct("% Área industrial","pInd")+campoPct("% Área comercial","pCom")+
-     campoPct("% Área institucional","pIns")+'</div></div>';
+var afQ = T_AFEC[PRO.factorAf] || ["—", 0, 0];
 
-  var afQ=T_AFEC[PRO.factorAf] || ["—",0,0];
-  h+='<div class="card"><div class="card-title">Parámetros preliminares — Caudal de diseño</div>'+
-     '<div class="card-sub">Se usan en la ventana de Caudal de diseño; cambiarlos aquí también los actualiza allá, y viceversa.</div>'+
-     '<div class="row">'+selec("Factor de afectación","factorAf",Object.keys(T_AFEC))+
-     '<div class="campo"><label>Sentido / rango admisible</label><input value="'+afQ[0]+'  ('+nf(afQ[1],1)+' – '+nf(afQ[2],1)+')" readonly></div>'+
-     campo("Coeficiente de afectación","coefAf","number",'step="0.01"')+
-     selec("Tipo de infiltración","tipoInf",Object.keys(T_INF))+
-     selec("Método de mayoración","metMay",["Flowers","Angels","Gaines"])+'</div></div>';
+  h += '<div class="card"><div class="card-title">Parámetros de Caudal de diseño</div>' +
+       '<div class="card-sub">Inserte los valores solicitados para calcular el caudal de diseño.</div>' +
+       (errores.length ? tarjetaErrores("Revisa estos valores:", errores) : '') +
+       
+       '<!-- Parámetros de área y coeficientes -->' +
+       '<div class="row">' + 
+         campo("Área total población (Ha)", "areaTotal") + 
+         campo("Coeficiente de retorno R", "R", "number", 'step="0.01"') +
+         '<div class="campo"><label>Área urbana (Ha) — calculada</label><input value="' + (PRO.areaTotal && PRO.pUrb !== "" ? nf(PRO.areaTotal * PRO.pUrb, 2) : "") + '" placeholder="—" readonly></div>' +
+       '</div>' +
+       
+       '<div class="row">' + 
+         campoPct("% Área urbana", "pUrb") + 
+         campoPct("% Área vías", "pVias") +
+         campoPct("% Área industrial", "pInd") + 
+         campoPct("% Área comercial", "pCom") +
+         campoPct("% Área institucional", "pIns") + 
+       '</div>' +
 
-  h+='<div class="card"><div class="card-title">Parámetros preliminares — Rejilla</div>'+
-     '<div class="card-sub">La separación entre barrotes toma el límite superior del rango del tipo de grava seleccionado. Se sincronizan con la ventana de Rejilla.</div>'+
+       '<!-- Factores y métodos de caudal -->' +
+       '<div class="row">' + 
+         selec("Factor de afectación", "factorAf", Object.keys(T_AFEC)) +
+         '<div class="campo"><label>Sentido / rango admisible</label><input value="' + afQ[0] + '  (' + nf(afQ[1], 1) + ' – ' + nf(afQ[2], 1) + ')" readonly></div>' +
+         campo("Coeficiente de afectación", "coefAf", "number", 'step="0.01"') +
+         selec("Tipo de infiltración", "tipoInf", Object.keys(T_INF)) +
+         selec("Método de mayoración", "metMay", ["Flowers", "Angels", "Gaines"]) + 
+       '</div>' +
+     '</div>';
+
+  h+='<div class="card"><div class="card-title">Parámetros de Rejilla</div>'+
+     '<div class="card-sub">Inserte los valores solicitados para el diseño de la rejilla.</div>'+
      '<div class="row">'+campo("Número de canales","nCanales")+campo("Velocidad efectiva del flujo Vf (m/s)","Vf","number",'step="0.01"')+
      selec("Limpieza de la rejilla","limpieza",["Manual","Mecánica"])+
      '<div class="campo"><label>Tipo (preestablece el ángulo)</label><select onchange="PRO.inclina=this.value;PRO.anguloManual=T_INCL[this.value];guardarPro();pintarTR();">'+
@@ -591,17 +603,22 @@ function calcularCaudal(){
           Qd:Qd,cInd:cInd,Qi:Qi,Qc:Qc,Qins:Qins,Qce:Qce,aInf:aInf,Qinf:Qinf,Qmd:Qmd,F:F,QMHF:QMHF,QD:QD,QDm3:QD/1000};
 }
 function pintarQ(){
-  var h='<div class="titulo"><h1>CAUDAL DE DISEÑO</h1><p>Secuencia RAS: dotación neta → aguas residuales domésticas y no domésticas → caudal medio diario → mayoración → caudal de diseño.</p></div>'+CONV;
+  var h='<div class="titulo"><h1>CAUDAL DE DISEÑO</h1><p>Calculo del caudal de diseño segun el RAS.</p></div>'+CONV;
   if(!PRO.pobProy || !PRO.areaTotal){
     h+='<div class="aviso"><b>Faltan insumos.</b> Para calcular el caudal se requiere la <i>población proyectada</i> y el <i>área total de la población</i>, definidas en la ventana de Términos de Referencia.'+
        '<br><button onclick="irVista(\'tr\')">Ir a términos de referencia</button></div>';
     gid("pane-q").innerHTML=h; return;
   }
   var af=T_AFEC[PRO.factorAf];
-  h+='<div class="link-ok">Población de diseño heredada: <b>'+nf(PRO.pobProy,0)+' hab</b> ('+(PRO.metodoPob||"manual")+
+  h+='<div class="link-ok">Población proyectada: <b>'+nf(PRO.pobProy,0)+' hab</b> ('+(PRO.metodoPob||"manual")+
      ') · Nivel de complejidad <b>'+nivelComp(Number(PRO.pobProy))+'</b> · Área total <b>'+nf(PRO.areaTotal,0)+' Ha</b> · Coeficiente de retorno <b>'+nf(PRO.R,2)+'</b></div>';
   h+='<div class="card"><div class="card-title">Parámetros de cálculo</div>'+
      '<div class="card-sub">Coeficiente de afectación de la dotación neta, tipo de infiltración y método de mayoración.</div>'+
+     '<div class="row">'+campo("Área total población (Ha)","areaTotal")+campo("Coeficiente de retorno R","R","number",'step="0.01"')+
+     '<div class="campo"><label>Área urbana (Ha) — calculada</label><input value="'+(PRO.areaTotal&&PRO.pUrb!==""?nf(PRO.areaTotal*PRO.pUrb,2):"")+'" placeholder="—" readonly></div></div>'+
+     '<div class="row">'+campoPct("% Área urbana","pUrb")+campoPct("% Área vías","pVias")+
+     campoPct("% Área industrial","pInd")+campoPct("% Área comercial","pCom")+
+     campoPct("% Área institucional","pIns")+'</div>'+
      '<div class="row">'+selec("Factor de afectación","factorAf",Object.keys(T_AFEC))+
      '<div class="campo"><label>Sentido / rango admisible</label><input value="'+af[0]+'  ('+nf(af[1],1)+' – '+nf(af[2],1)+')" readonly></div>'+
      campo("Coeficiente de afectación","coefAf","number",'step="0.01"')+
@@ -660,8 +677,7 @@ function pintarQ(){
   t+=fila("CAUDAL DE DISEÑO",c.QD,"L/s",0,"QD = QMHF + Q<sub>ce</sub> + Q<sub>inf</sub>",nf(c.QMHF,0)+" + "+nf(c.Qce,2)+" + "+nf(c.Qinf,2),"Caudal que alimenta el dimensionamiento de las unidades de tratamiento.","","final");
   t+=fila("CAUDAL DE DISEÑO",c.QDm3,"m³/s",4,"QD<sub>(m³/s)</sub> = QD<sub>(L/s)</sub> / 1000",nf(c.QD,0)+" / 1000","Valor que se transfiere a la ventana de rejilla.","","final");
   t+='</tbody></table>';
-  h+='<div class="card"><div class="card-title">Memoria de cálculo</div><div class="card-sub">Haz clic en cualquier fila para ver la fórmula, el reemplazo numérico y el origen del dato.</div>'+t+
-     '<div class="acciones"><button class="btn btn-primary" style="width:auto;padding:0 22px" onclick="irVista(\'rej\')">CONTINUAR A DISEÑO DE REJILLA →</button></div></div>';
+  h+='<div class="card"><div class="card-title">Memoria de cálculo</div><div class="card-sub">Haz clic en cualquier fila para ver la fórmula, el reemplazo numérico y el origen del dato.</div>'+t+'</div>';
   gid("pane-q").innerHTML=h;
 }
 
@@ -795,12 +811,12 @@ var MODULOS_INFO=[
  {v:"tr",ico:"📋",t:"Términos de referencia",d:"Datos generales del proyecto: población, áreas, duración y coeficiente de retorno."},
  {v:"proy",ico:"📈",t:"Proyección poblacional",d:"Métodos lineal, geométrico y exponencial a partir de censos DANE."},
  {v:"q",ico:"🚰",t:"Caudal de diseño",d:"Caudales doméstico, no doméstico, infiltración y conexiones erradas."},
- {v:"rej",ico:"🔲",t:"Diseño de rejilla",d:"Cribado grueso: geometría del canal, barrotes y pérdidas de carga."},
- {v:"m1",ico:"🏖️",t:"Aducción",d:"Remoción de arenas y sólidos sedimentables."},
- {v:"m2",ico:"🌀",t:"Sedimentador primario",d:"Remoción de sólidos suspendidos por gravedad."},
- {v:"m3",ico:"🧫",t:"Tratamiento biológico",d:"Remoción de materia orgánica disuelta y en suspensión."},
- {v:"m4",ico:"🌀",t:"Sedimentador secundario",d:"Clarificación final del efluente biológico."},
- {v:"m5",ico:"☀️",t:"Desinfección",d:"Eliminación de organismos patógenos antes del vertimiento."}
+ {v:"rej",ico:"🔲",t:"Diseño de rejilla",d:"Cribado de prticulas, dimensiones de rejilla, cantidad barrotes y pérdidas de carga."},
+ {v:"m1",ico:"🏖️",t:"Aducción",d:"Conduccion a el desarenador."},
+ {v:"m2",ico:"🌀",t:"Modulo 5",d:"Remoción de sólidos suspendidos por gravedad."},
+ {v:"m3",ico:"🧫",t:"Modulo 6",d:"Remoción de materia orgánica disuelta y en suspensión."},
+ {v:"m4",ico:"🌀",t:"Modulo 6",d:"Clarificación final del efluente biológico."},
+ {v:"m5",ico:"☀️",t:"Modulo 7",d:"Eliminación de organismos patógenos antes del vertimiento."}
 ];
 function moduloListo(v){
   if(v==="datos")return true;
@@ -811,9 +827,9 @@ function moduloListo(v){
   return false;
 }
 function pintarInicio(){
-  var h='<div class="inicio-hero"><div class="lg">👷🏽⚙️</div><h1>ANGEL TRESPALACIOS</h1>'+
+  var h='<div class="inicio-hero"><div class="lg">👷🏽⚙️</div><h1>TRESPLACIOS</h1>'+
    '<div class="sub">SOLUCIONES AMBIENTALES PARA TUS PROYECTOS<br>BASADAS EN TUS NECESIDADES</div>'+
-   '<p>Bienvenido a la plataforma de diseño de plantas de tratamiento de agua residual. Aquí podrás diseñar, paso a paso y de forma encadenada, todas las unidades de una PTAR: desde los datos preliminares y la proyección poblacional, hasta el cribado, la sedimentación, el tratamiento biológico y la desinfección.</p></div>';
+   '<p>Bienvenido a la plataforma de diseño de plantas de tratamiento de agua residual. Aquí podrás diseñar, paso a paso y de forma encadenada, todas las unidades que hacen parte de un Sistema de Tratamiento de Agua Residual.</p></div>';
   h+='<div class="mod-grid">';
   MODULOS_INFO.forEach(function(m){
     var ok=moduloListo(m.v);
@@ -1286,21 +1302,28 @@ function limpiarProyecto(){
 }
 
 /* ============================================================
-   MODAL (equivalente a messagebox)
-   ============================================================ */
-function mostrarModal(titulo, mensaje, esError){
-  document.getElementById('modal-title').innerHTML = (esError?"⚠️ ":"✅ ") + titulo;
-  document.getElementById('modal-msg').textContent = mensaje;
-  document.getElementById('modal-box').classList.toggle('err', !!esError);
-  document.getElementById('overlay').classList.add('show');
-}
-function mostrarError(titulo, mensaje){ mostrarModal(titulo, mensaje, true); }
-function cerrarModal(){ document.getElementById('overlay').classList.remove('show'); }
-
-/* ============================================================
    HELPERS DE INTERFAZ
    ============================================================ */
 function actualizarMenu(modulo){
+  // 1. Buscamos el contenedor de los botones de submódulo
+  const btnDatos = document.getElementById('btn-menu-datos');
+  if(btnDatos){
+    const menuModulos = btnDatos.parentElement; // Es el contenedor de la barra de botones
+    
+    // Verificamos si ya existe el encabezado arriba para no duplicarlo
+    let header = document.getElementById('encabezado-proyeccion');
+    if(!header){
+      header = document.createElement('div');
+      header.id = 'encabezado-proyeccion';
+      // Le agregamos un padding a la izquierda para despegarlo del borde de la pantalla
+      header.style.cssText = 'padding: 0 20px; box-sizing: border-box;'; 
+      header.innerHTML = '<div class="titulo"><h1>PROYECCIÓN POBLACIONAL</h1><p>Cálculo de la proyección poblacional según el RAS.</p></div>' + CONV;
+      // Inserta el título JUSTO ANTES de la barra de botones
+      menuModulos.parentNode.insertBefore(header, menuModulos);
+    }
+  }
+
+  // 2. Estado activo de los botones
   const botones = {
     datos: document.getElementById('btn-menu-datos'),
     calculos: document.getElementById('btn-menu-calculos'),
@@ -1308,14 +1331,15 @@ function actualizarMenu(modulo){
     resultados: document.getElementById('btn-menu-resultados')
   };
   Object.keys(botones).forEach(k=>{
-    botones[k].classList.toggle('active', k===modulo);
+    if(botones[k]) botones[k].classList.toggle('active', k===modulo);
   });
 }
 
 function contenidoEl(){ return document.getElementById('contenido'); }
 
 function crearTitulo(titulo, descripcion){
-  return '<div class="titulo"><h1>'+titulo+'</h1><p>'+descripcion+'</p></div>';
+  // Solo genera el título interno del submódulo (DATOS POBLACIONALES, CÁLCULOS, etc.)
+  return '<div style="margin-top:15px; margin-bottom:15px;"><h2>' + titulo + '</h2><p style="color:#666;">' + descripcion + '</p></div>';
 }
 
 function el(html){
