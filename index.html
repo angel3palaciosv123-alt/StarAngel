@@ -501,7 +501,7 @@ function pintarTR(){
      campoPct("% Área industrial","pInd")+campoPct("% Área comercial","pCom")+
      campoPct("% Área institucional","pIns")+'</div></div>';
 
-  var afQ=T_AFEC[PRO.factorAf];
+  var afQ=T_AFEC[PRO.factorAf] || ["—",0,0];
   h+='<div class="card"><div class="card-title">Parámetros preliminares — Caudal de diseño</div>'+
      '<div class="card-sub">Se usan en la ventana de Caudal de diseño; cambiarlos aquí también los actualiza allá, y viceversa.</div>'+
      '<div class="row">'+selec("Factor de afectación","factorAf",Object.keys(T_AFEC))+
