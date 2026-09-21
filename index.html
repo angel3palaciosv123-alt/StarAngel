@@ -289,8 +289,7 @@
     <label>CONTRASEÑA</label><input id="lg-p" type="password" autocomplete="current-password">
     <div id="login-err"></div>
     <button class="btn btn-primary" style="margin-top:18px" onclick="lgEntrar()">INICIAR SESIÓN</button>
-    <div class="cred"><b>Usuarios habilitados</b><br>ingeniero / angel2024 &nbsp;·&nbsp; Diseñador<br>revisor / revisor2024 &nbsp;·&nbsp; Revisor (consulta)</div>
-  </div>
+      </div>
 </div>
 
 <div class="topbar" id="topbar">
@@ -338,17 +337,17 @@
    PLATAFORMA PTAR — capa adicional (no modifica el motor de
    proyección: solo lee `estado` y agrega ventanas nuevas)
    ========================================================== */
-var USUARIOS={ingeniero:{p:"angel2024",rol:"Diseñador",edita:true},revisor:{p:"revisor2024",rol:"Revisor (consulta)",edita:false}};
+var USUARIOS={Angelito:{p:"Angel2026",rol:"Diseñador",edita:true},Nathalia:{p:"IngNathalia",rol:"Diseñador",edita:true},revisor:{p:"revisor2024",rol:"Revisor",edita:false}};
 var SES=null;
 
 /* ---------- Estado del proyecto (TR + resultados) ---------- */
 var PRO={
   diseñador:"",
-  nombrePob:"", duracion:30, anioIni:2030, pobProy:"", metodoPob:"",
-  areaTotal:"", R:0.85, pUrb:"", pVias:"", pInd:"", pCom:"", pIns:"",
-  factorAf:"TEMPERATURA", coefAf:1.2, tipoInf:"Baja", metMay:"Flowers",
-  nCanales:3, Vf:0.15, limpieza:"Manual", inclina:"INCLINADAS", anguloManual:60, grava:"GRUESAS",
-  forma:"C7", diamIn:2, bordeLibre:0.3, Hrh:1.5,
+  nombrePob:"", duracion:"", anioIni:"", pobProy:"", metodoPob:"",
+  areaTotal:"", R:"", pUrb:"", pVias:"", pInd:"", pCom:"", pIns:"",
+  factorAf:"", coefAf:"", tipoInf:"", metMay:"",
+  nCanales:"", Vf:"", limpieza:"", inclina:"", anguloManual:"", grava:"",
+  forma:"", diamIn:"", bordeLibre:"", Hrh:"",
   Q:null, REJ:null
 };
 try{var _g=localStorage.getItem("ptarProyecto"); if(_g) PRO=Object.assign(PRO,JSON.parse(_g));}catch(e){}
@@ -362,6 +361,12 @@ var T_GRAVA={"FINAS":[0.02,0.04],"MEDIAS":[0.04,0.075],"GRUESAS":[0.075,0.15]};
 var T_FORMA={"C1":2.42,"C2":1.83,"C3":1.67,"C4":1.035,"C5":0.92,"C6":0.76,"C7":1.79};
 var T_INCL={"VERTICALES":80,"INCLINADAS":60};
 var T_AFEC={"NIVEL SOCIOECONÓMICO":["INCIERTO",0.8,1.2],"TEMPERATURA":["DIRECTO",0.9,1.2],"MICROMEDICIÓN":["INVERSO",0.7,1.1],"PRECIO":["INVERSO",0.7,1.2],"CALIDAD DEL AGUA Y PRESIÓN EN LA RED":["DIRECTO",0.9,1.2],"DESARROLLO INDUSTRIAL":["DIRECTO",1,1.2],"POBLACIÓN FLOTANTE":["DIRECTO",1,1.2]};
+var R_RANGO=[0.7,0.9];
+var VF_RANGO=[0,0.15];
+function tarjetaErrores(titulo,errores){
+  return '<div class="aviso" style="background:#FEF2F2;border-color:#FECACA"><b>'+titulo+'</b><ul style="margin:8px 0 0;padding-left:18px;line-height:1.7">'+
+    errores.map(function(e){return '<li>'+e+'</li>';}).join('')+'</ul></div>';
+}
 
 /* ---------- Utilidades ---------- */
 function nf(v,d){if(v===null||v===undefined||isNaN(v))return "—";return Number(v).toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d});}
@@ -437,9 +442,14 @@ function actualizarEstados(){
 function setPro(k,el,num){PRO[k]= num? (el.value===""?"":Number(el.value)) : el.value; guardarPro(); actualizarEstados();}
 var CONV='<div class="conv"><span><i class="dot d-ins"></i>Dato insertado</span><span><i class="dot d-cal"></i>Dato calculado</span><span><i class="dot d-bus"></i>Valor buscado en tabla RAS</span></div>';
 function campo(lbl,k,tipo,extra){
-  var v=PRO[k]===""||PRO[k]===null?"":PRO[k];
-  return '<div class="campo"><label>'+lbl+'</label><input type="'+(tipo||"number")+'" value="'+v+'" oninput="setPro(\''+k+'\',this,'+(tipo==="text"?"false":"true")+')" '+(extra||"")+'></div>';
+  var v=PRO[k]===""||PRO[k]===null||PRO[k]===undefined?"":PRO[k];
+  return '<div class="campo"><label>'+lbl+'</label><input type="'+(tipo||"number")+'" placeholder="Ingrese un valor" value="'+v+'" oninput="setPro(\''+k+'\',this,'+(tipo==="text"?"false":"true")+')" '+(extra||"")+'></div>';
 }
+function campoPct(lbl,k,extra){
+  var v=PRO[k]===""||PRO[k]===null||PRO[k]===undefined?"":rnd(PRO[k]*100,3);
+  return '<div class="campo"><label>'+lbl+' (%)</label><input type="number" placeholder="Ej: 62" value="'+v+'" oninput="setProPct(\''+k+'\',this)" '+(extra||"")+'></div>';
+}
+function setProPct(k,el){PRO[k]= el.value===""?"":Number(el.value)/100; guardarPro(); actualizarEstados();}
 function selec(lbl,k,ops){
   return '<div class="campo"><label>'+lbl+'</label><select onchange="setPro(\''+k+'\',this,false)">'+
     ops.map(function(o){return '<option value="'+o+'"'+(PRO[k]===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></div>';
@@ -450,13 +460,13 @@ function selec(lbl,k,ops){
    ========================================================== */
 function pintarTR(){
   var af=PRO.anioIni&&PRO.duracion?Number(PRO.anioIni)+Number(PRO.duracion):"";
-  var h='<div class="titulo"><h1>TÉRMINOS DE REFERENCIA</h1><p>Parámetros generales del proyecto. Alimentan las ventanas de calculos.</p></div>'+CONV;
+  var h='<div class="titulo"><h1>TÉRMINOS DE REFERENCIA</h1><p>Parámetros generales del proyecto. Se guardan automáticamente y alimentan las ventanas de caudal de diseño y rejilla.</p></div>'+CONV;
 
   h+='<div class="card"><div class="card-title">Identificación del proyecto</div>'+
      '<div class="card-sub">La población proyectada se importa desde la ventana de proyección poblacional.</div>'+
      '<div class="row">'+campo("Diseñador","diseñador","text")+campo("Nombre de la población","nombrePob","text")+'</div>'+
      '<div class="row">'+campo("Duración del proyecto (años)","duracion")+campo("Año inicial del proyecto","anioIni")+
-     '<div class="campo"><label>Año final del proyecto (calculado)</label><input value="'+af+'" readonly></div></div></div>';
+     '<div class="campo"><label>Año final del proyecto (calculado)</label><input value="'+af+'" placeholder="—" readonly></div></div></div>';
 
   /* enlace con proyección */
   var disp=poblacionesDisponibles();
@@ -474,18 +484,46 @@ function pintarTR(){
        '<br><button onclick="irVista(\'proy\')">Ir a proyección poblacional</button></div>';
   }
   h+='<div class="card"><div class="row">'+campo("Población proyectada (hab)","pobProy")+
-     '<div class="campo"><label>Método adoptado</label><input value="'+(PRO.metodoPob||"Manual")+'" readonly></div>'+
-     '<div class="campo"><label>Nivel de complejidad (RAS)</label><input value="'+(PRO.pobProy?nivelComp(Number(PRO.pobProy)):"")+'" readonly></div></div></div>';
+     '<div class="campo"><label>Método adoptado</label><input value="'+(PRO.metodoPob||"")+'" placeholder="Manual" readonly></div>'+
+     '<div class="campo"><label>Nivel de complejidad (RAS)</label><input value="'+(PRO.pobProy?nivelComp(Number(PRO.pobProy)):"")+'" placeholder="—" readonly></div></div></div>';
+
+  var errores=[];
+  var sumaPct=(Number(PRO.pUrb)||0)+(Number(PRO.pVias)||0)+(Number(PRO.pInd)||0)+(Number(PRO.pCom)||0)+(Number(PRO.pIns)||0);
+  if(sumaPct>1.001) errores.push("La suma de los porcentajes de área ("+nf(sumaPct*100,1)+"%) supera el 100 % del área total.");
+  if(PRO.R!==""&&(Number(PRO.R)<R_RANGO[0]||Number(PRO.R)>R_RANGO[1])) errores.push("El coeficiente de retorno R = "+nf(Number(PRO.R),2)+" está fuera del rango recomendado por el RAS ("+nf(R_RANGO[0],2)+" – "+nf(R_RANGO[1],2)+").");
 
   h+='<div class="card"><div class="card-title">Áreas y coeficientes</div>'+
-     '<div class="card-sub">Los porcentajes se expresan en decimal (0,1 = 10 %).</div>'+
-     '<div class="row">'+campo("Área total población (Ha)","areaTotal")+campo("Coeficiente de retorno","R","number",'step="0.01"')+
-     '<div class="campo"><label>Área urbana (Ha) — calculada</label><input value="'+(PRO.areaTotal?nf(PRO.areaTotal*PRO.pUrb,2):"")+'" readonly></div></div>'+
-     '<div class="row">'+campo("% Área urbana","pUrb","number",'step="0.001"')+campo("% Área vías","pVias","number",'step="0.001"')+
-     campo("% Área industrial","pInd","number",'step="0.001"')+campo("% Área comercial","pCom","number",'step="0.001"')+
-     campo("% Área institucional","pIns","number",'step="0.001"')+'</div>'+
-     '<div class="acciones"><button class="btn btn-primary" style="width:auto;padding:0 20px" onclick="irVista(\'q\')">CONTINUAR A CAUDAL DE DISEÑO →</button>'+
-     '<button class="btn-sec" onclick="exportarJSON()">EXPORTAR PROYECTO (.json)</button></div></div>';
+     '<div class="card-sub">Los porcentajes se ingresan directamente en % (ejemplo: 62 = 62 %).</div>'+
+     (errores.length?tarjetaErrores("Revisa estos valores:",errores):'')+
+     '<div class="row">'+campo("Área total población (Ha)","areaTotal")+campo("Coeficiente de retorno R","R","number",'step="0.01"')+
+     '<div class="campo"><label>Área urbana (Ha) — calculada</label><input value="'+(PRO.areaTotal&&PRO.pUrb!==""?nf(PRO.areaTotal*PRO.pUrb,2):"")+'" placeholder="—" readonly></div></div>'+
+     '<div class="row">'+campoPct("% Área urbana","pUrb")+campoPct("% Área vías","pVias")+
+     campoPct("% Área industrial","pInd")+campoPct("% Área comercial","pCom")+
+     campoPct("% Área institucional","pIns")+'</div></div>';
+
+  var afQ=T_AFEC[PRO.factorAf];
+  h+='<div class="card"><div class="card-title">Parámetros preliminares — Caudal de diseño</div>'+
+     '<div class="card-sub">Se usan en la ventana de Caudal de diseño; cambiarlos aquí también los actualiza allá, y viceversa.</div>'+
+     '<div class="row">'+selec("Factor de afectación","factorAf",Object.keys(T_AFEC))+
+     '<div class="campo"><label>Sentido / rango admisible</label><input value="'+afQ[0]+'  ('+nf(afQ[1],1)+' – '+nf(afQ[2],1)+')" readonly></div>'+
+     campo("Coeficiente de afectación","coefAf","number",'step="0.01"')+
+     selec("Tipo de infiltración","tipoInf",Object.keys(T_INF))+
+     selec("Método de mayoración","metMay",["Flowers","Angels","Gaines"])+'</div></div>';
+
+  h+='<div class="card"><div class="card-title">Parámetros preliminares — Rejilla</div>'+
+     '<div class="card-sub">La separación entre barrotes toma el límite superior del rango del tipo de grava seleccionado. Se sincronizan con la ventana de Rejilla.</div>'+
+     '<div class="row">'+campo("Número de canales","nCanales")+campo("Velocidad efectiva del flujo Vf (m/s)","Vf","number",'step="0.01"')+
+     selec("Limpieza de la rejilla","limpieza",["Manual","Mecánica"])+
+     '<div class="campo"><label>Tipo (preestablece el ángulo)</label><select onchange="PRO.inclina=this.value;PRO.anguloManual=T_INCL[this.value];guardarPro();pintarTR();">'+
+     Object.keys(T_INCL).map(function(o){return '<option value="'+o+'"'+(PRO.inclina===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></div>'+
+     campo("Ángulo de inclinación θ (°)","anguloManual","number",'step="1"')+'</div>'+
+     '<div class="row">'+selec("Tipo de grava (separación z)","grava",Object.keys(T_GRAVA))+
+     selec("Forma del barrote","forma",Object.keys(T_FORMA))+campo("Diámetro/espesor del barrote (in)","diamIn","number",'step="0.25"')+
+     campo("Borde libre (m)","bordeLibre","number",'step="0.05"')+campo("Altura en área húmeda Hrh (m)","Hrh","number",'step="0.1"')+'</div></div>';
+
+  h+='<div class="acciones">'+
+     (SES&&SES.edita?'<button class="btn-sec" onclick="limpiarTodo()">🗑️ LIMPIAR TODO</button><button class="btn-sec" onclick="exportarJSON()">💾 EXPORTAR PROYECTO (.json)</button>':'<span class="mini" style="align-self:center">El revisor no puede editar ni exportar este proyecto.</span>')+
+     '</div>';
   gid("pane-tr").innerHTML=h;
 }
 function poblacionesDisponibles(){
@@ -512,6 +550,24 @@ function exportarJSON(){
   var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download="proyecto_ptar_"+(PRO.nombrePob||"sin_nombre").replace(/\s+/g,"_")+".json"; a.click();
 }
+function importarArchivo(input){
+  var f=input.files && input.files[0]; if(!f) return;
+  var lector=new FileReader();
+  lector.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      PRO=Object.assign(PRO,data);
+      guardarPro(); actualizarEstados();
+      gid("login-wrap").style.display="none";
+      if(!SES){ SES={u:"revisor",rol:"Revisor (consulta)",edita:false}; try{sessionStorage.setItem("ptarSes",JSON.stringify(SES));}catch(err){}
+        gid("tb-user").textContent="REVISOR · Revisor (consulta)"; document.body.classList.add("solo-lectura"); }
+      irVista("inicio");
+      mostrarModal("Proyecto cargado","Se importaron los datos del proyecto '"+(PRO.nombrePob||"sin nombre")+"'. Todos los módulos muestran ahora los resultados guardados.");
+    }catch(err){ mostrarModal("Error al cargar","El archivo seleccionado no es un proyecto válido de AngelProyect (.json)."); }
+  };
+  lector.readAsText(f);
+  input.value="";
+}
 
 /* ==========================================================
    VENTANA 3 — CAUDAL DE DISEÑO
@@ -535,14 +591,14 @@ function calcularCaudal(){
           Qd:Qd,cInd:cInd,Qi:Qi,Qc:Qc,Qins:Qins,Qce:Qce,aInf:aInf,Qinf:Qinf,Qmd:Qmd,F:F,QMHF:QMHF,QD:QD,QDm3:QD/1000};
 }
 function pintarQ(){
-  var h='<div class="titulo"><h1>CAUDAL DE DISEÑO</h1><p>Secuencia RAS: Dotación neta → Aguas Residuales Domésticas y No Domésticas → Caudal medio diario → Caudal de diseño.</p></div>'+CONV;
+  var h='<div class="titulo"><h1>CAUDAL DE DISEÑO</h1><p>Secuencia RAS: dotación neta → aguas residuales domésticas y no domésticas → caudal medio diario → mayoración → caudal de diseño.</p></div>'+CONV;
   if(!PRO.pobProy || !PRO.areaTotal){
     h+='<div class="aviso"><b>Faltan insumos.</b> Para calcular el caudal se requiere la <i>población proyectada</i> y el <i>área total de la población</i>, definidas en la ventana de Términos de Referencia.'+
        '<br><button onclick="irVista(\'tr\')">Ir a términos de referencia</button></div>';
     gid("pane-q").innerHTML=h; return;
   }
   var af=T_AFEC[PRO.factorAf];
-  h+='<div class="link-ok">Población proyectada: <b>'+nf(PRO.pobProy,0)+' hab</b> ('+(PRO.metodoPob||"manual")+
+  h+='<div class="link-ok">Población de diseño heredada: <b>'+nf(PRO.pobProy,0)+' hab</b> ('+(PRO.metodoPob||"manual")+
      ') · Nivel de complejidad <b>'+nivelComp(Number(PRO.pobProy))+'</b> · Área total <b>'+nf(PRO.areaTotal,0)+' Ha</b> · Coeficiente de retorno <b>'+nf(PRO.R,2)+'</b></div>';
   h+='<div class="card"><div class="card-title">Parámetros de cálculo</div>'+
      '<div class="card-sub">Coeficiente de afectación de la dotación neta, tipo de infiltración y método de mayoración.</div>'+
@@ -556,6 +612,18 @@ function pintarQ(){
      '<button class="btn-sec" onclick="abrirTodo(\'pane-q\',false)">CONTRAER TODO</button>'+
      '<button class="btn-sec" onclick="window.print()">IMPRIMIR</button></div></div>';
 
+  var errores=[];
+  var coefN=Number(PRO.coefAf);
+  if(coefN<af[1]||coefN>af[2]) errores.push("El coeficiente de afectación ("+nf(coefN,2)+") está fuera del rango admisible para el factor '"+PRO.factorAf+"': "+nf(af[1],1)+" – "+nf(af[2],1)+".");
+  var Rn=Number(PRO.R);
+  if(PRO.R===""||isNaN(Rn)) errores.push("Falta el coeficiente de retorno R (se define en Términos de Referencia).");
+  else if(Rn<R_RANGO[0]||Rn>R_RANGO[1]) errores.push("El coeficiente de retorno R = "+nf(Rn,2)+" está fuera del rango recomendado por el RAS ("+nf(R_RANGO[0],2)+" – "+nf(R_RANGO[1],2)+").");
+  if(PRO.pUrb===""||PRO.pVias===""||PRO.pInd===""||PRO.pCom===""||PRO.pIns==="") errores.push("Faltan porcentajes de área por definir en Términos de Referencia.");
+  if(errores.length){
+    h+=tarjetaErrores("No es posible calcular el caudal de diseño:",errores)+'<div style="padding:0 20px"><button class="btn-sec" onclick="irVista(\'tr\')">Ir a términos de referencia</button></div>';
+    gid("pane-q").innerHTML=h; PRO.Q=null; guardarPro(); actualizarEstados(); return;
+  }
+
   var c=calcularCaudal(); PRO.Q=c; guardarPro(); actualizarEstados();
   var fueraRango = c.coef<af[1]||c.coef>af[2];
   var t='<table class="res-table"><thead><tr><th></th><th>VARIABLE</th><th>VALOR</th><th>UNIDAD</th></tr></thead><tbody>';
@@ -568,14 +636,14 @@ function pintarQ(){
   t+=seccion("2. CAUDAL DE AGUAS RESIDUALES DOMÉSTICAS (Qd)");
   t+=fila("Caudal de aguas residuales domésticas",c.Qd,"L/s",2,"Q<sub>d</sub> = (R · P · d<sub>neta</sub>) / 86 400","("+nf(c.R,2)+" × "+nf(c.P,0)+" × "+nf(c.Dn,2)+") / 86 400","R = coeficiente de retorno (Términos de Referencia). 86 400 = segundos en un día.");
   t+=seccion("3. CAUDAL DE AGUAS RESIDUALES NO DOMÉSTICAS");
-  t+=fila("Área urbana",c.Au,"Ha",2,"A<sub>u</sub> = A<sub>total</sub> × %A<sub>urbana</sub>",nf(c.At,0)+" × "+nf(PRO.pUrb,3),"Términos de Referencia.");
+  t+=fila("Área urbana",c.Au,"Ha",2,"A<sub>u</sub> = A<sub>total</sub> × %A<sub>urbana</sub>",nf(c.At,0)+" × "+nf(PRO.pUrb,3)+" ("+nf(PRO.pUrb*100,1)+"%)","Términos de Referencia.");
   t+=fila("Contribución industrial",c.cInd,"L/s·Ha",2,"Tabla — industrias pequeñas por nivel","Nivel "+c.nivel+" → "+nf(c.cInd,1),"Valor buscado: 0,4 (Bajo) · 0,6 (Medio) · 0,8 (Medio Alto) · 1,0 (Alto).");
-  t+=fila("Caudal industrial (Q<sub>ind</sub>)",c.Qi,"L/s",2,"Q<sub>ind</sub> = A<sub>u</sub> × %A<sub>ind</sub> × c<sub>ind</sub>",nf(c.Au,2)+" × "+nf(PRO.pInd,3)+" × "+nf(c.cInd,1),"Área industrial = "+nf(c.Aind,2)+" Ha.");
-  t+=fila("Caudal comercial (Q<sub>com</sub>)",c.Qc,"L/s",2,"Q<sub>com</sub> = A<sub>u</sub> × %A<sub>com</sub> × 0,15",nf(c.Au,2)+" × "+nf(PRO.pCom,3)+" × 0,15","Contribución comercial típica 0,15 L/s·Ha. Área comercial = "+nf(c.Acom,2)+" Ha.");
-  t+=fila("Caudal institucional (Q<sub>ins</sub>)",c.Qins,"L/s",2,"Q<sub>ins</sub> = A<sub>u</sub> × %A<sub>ins</sub> × 0,5",nf(c.Au,2)+" × "+nf(PRO.pIns,3)+" × 0,5","Contribución institucional típica 0,5 L/s·Ha. Área institucional = "+nf(c.Ains,2)+" Ha.");
+  t+=fila("Caudal industrial (Q<sub>ind</sub>)",c.Qi,"L/s",2,"Q<sub>ind</sub> = A<sub>u</sub> × %A<sub>ind</sub> × c<sub>ind</sub>",nf(c.Au,2)+" × "+nf(PRO.pInd,3)+" ("+nf(PRO.pInd*100,1)+"%) × "+nf(c.cInd,1),"Área industrial = "+nf(c.Aind,2)+" Ha.");
+  t+=fila("Caudal comercial (Q<sub>com</sub>)",c.Qc,"L/s",2,"Q<sub>com</sub> = A<sub>u</sub> × %A<sub>com</sub> × 0,15",nf(c.Au,2)+" × "+nf(PRO.pCom,3)+" ("+nf(PRO.pCom*100,1)+"%) × 0,15","Contribución comercial típica 0,15 L/s·Ha. Área comercial = "+nf(c.Acom,2)+" Ha.");
+  t+=fila("Caudal institucional (Q<sub>ins</sub>)",c.Qins,"L/s",2,"Q<sub>ins</sub> = A<sub>u</sub> × %A<sub>ins</sub> × 0,5",nf(c.Au,2)+" × "+nf(PRO.pIns,3)+" ("+nf(PRO.pIns*100,1)+"%) × 0,5","Contribución institucional típica 0,5 L/s·Ha. Área institucional = "+nf(c.Ains,2)+" Ha.");
   t+=fila("Caudal por conexiones erradas (Q<sub>ce</sub>)",c.Qce,"L/s",2,"Q<sub>ce</sub> = A<sub>u</sub> × 0,2",nf(c.Au,2)+" × 0,2","Aporte máximo por conexiones erradas sin sistema pluvial, 0,2 L/s·Ha.");
   t+=fila("Aporte por infiltración",c.aInf,"L/s·Ha",2,"Tabla — infiltración "+PRO.tipoInf,"→ "+nf(c.aInf,1),"Valor buscado: Alta 0,3 · Media 0,2 · Baja 0,1 L/s·Ha.");
-  t+=fila("Caudal por infiltración (Q<sub>inf</sub>)",c.Qinf,"L/s",2,"Q<sub>inf</sub> = A<sub>total</sub> × %A<sub>urb</sub> × %A<sub>vías</sub> × a<sub>inf</sub>",nf(c.At,0)+" × "+nf(PRO.pUrb,3)+" × "+nf(PRO.pVias,3)+" × "+nf(c.aInf,1),"El área de vías es la superficie sobre la que se estima la longitud de red expuesta a infiltración.");
+  t+=fila("Caudal por infiltración (Q<sub>inf</sub>)",c.Qinf,"L/s",2,"Q<sub>inf</sub> = A<sub>total</sub> × %A<sub>urb</sub> × %A<sub>vías</sub> × a<sub>inf</sub>",nf(c.At,0)+" × "+nf(PRO.pUrb,3)+" ("+nf(PRO.pUrb*100,1)+"%) × "+nf(PRO.pVias,3)+" ("+nf(PRO.pVias*100,1)+"%) × "+nf(c.aInf,1),"El área de vías es la superficie sobre la que se estima la longitud de red expuesta a infiltración.");
   t+=seccion("4. CAUDAL MEDIO DIARIO DE AGUAS RESIDUALES (Qmd)");
   t+=fila("Caudal medio diario",c.Qmd,"L/s",2,"Q<sub>md</sub> = Q<sub>d</sub> + Q<sub>ind</sub> + Q<sub>com</sub> + Q<sub>ins</sub>",nf(c.Qd,2)+" + "+nf(c.Qi,2)+" + "+nf(c.Qc,2)+" + "+nf(c.Qins,2),"No incluye conexiones erradas ni infiltración: esos aportes se suman al final.");
   t+=seccion("5. FACTOR DE MAYORACIÓN ("+PRO.metMay.toUpperCase()+")");
@@ -679,9 +747,18 @@ function pintarRej(){
      '<button class="btn-sec" onclick="abrirTodo(\'pane-rej\',true)">VER TODA LA MEMORIA DE CÁLCULO</button>'+
      '<button class="btn-sec" onclick="abrirTodo(\'pane-rej\',false)">CONTRAER TODO</button>'+
      '<button class="btn-sec" onclick="window.print()">IMPRIMIR</button></div></div>';
+
+  var erroresRej=[];
+  if(r.Vf<VF_RANGO[0]||r.Vf>VF_RANGO[1]) erroresRej.push("La velocidad efectiva de flujo Vf = "+nf(r.Vf,2)+" m/s está fuera del rango exigido por el RAS para rejillas de limpieza manual: "+nf(VF_RANGO[0],2)+" – "+nf(VF_RANGO[1],2)+" m/s.");
+  if(!(r.nb>=1)) erroresRej.push("El número de barrotes calculado no es válido; revisa el caudal, la velocidad Vf y la altura Hrh.");
+  if(erroresRej.length){
+    h+=tarjetaErrores("No es posible calcular la rejilla:",erroresRej);
+    gid("pane-rej").innerHTML=h; return;
+  }
   h+='<div class="card"><div class="card-title">Esquemas</div><div class="card-sub">Vista frontal del canal y vista lateral de un solo barrote, con el ángulo, las longitudes y Hrh.</div>'+
      '<div style="display:flex;gap:16px;flex-wrap:wrap"><div class="svg-wrap" style="flex:1;min-width:320px;margin:0">'+svgRejillaFrontal(r)+
      '</div><div class="svg-wrap" style="flex:1;min-width:280px;margin:0">'+svgRejillaLateral(r)+'</div></div></div>';
+
 
   var t='<table class="res-table"><thead><tr><th></th><th>VARIABLE</th><th>VALOR</th><th>UNIDAD</th></tr></thead><tbody>';
   t+=seccion("1. DATOS DE PARTIDA");
@@ -696,7 +773,7 @@ function pintarRej(){
   t+=fila("Longitud total del barrote (Lrt)",r.Lrt,"m",2,"L<sub>rt</sub> = L<sub>bs</sub> + L<sub>bns</sub>",nf(r.Lbs,2)+" + "+nf(r.Lbns,2),"Longitud de fabricación de cada barrote (medida sobre la inclinación).");
   t+=fila("Altura total del canal y de la rejilla (vertical)",r.Htotal,"m",2,"H<sub>total</sub> = H<sub>rh</sub> + BL",nf(r.H,2)+" + "+nf(r.BL,2),"Altura vertical desde el fondo del canal hasta el borde superior de la rejilla; es la que se usa para fabricar el marco de la rejilla.");
   t+=seccion("3. GEOMETRÍA DEL CANAL Y DE LA REJILLA");
-  t+=fila("Área de captación (Ac)",r.Ac,"m²",4,"A<sub>c</sub> = Q<sub>u</sub> / V<sub>f</sub>",nf(r.Q,4)+" / "+nf(r.Vf,2),"Área de paso requerida para la velocidad efectiva de flujo adoptada.",(r.Vf<0.3||r.Vf>0.6)?"La velocidad de paso habitual en rejillas de limpieza manual está entre 0,30 y 0,60 m/s; valores menores favorecen la sedimentación de arenas.":"");
+  t+=fila("Área de captación (Ac)",r.Ac,"m²",4,"A<sub>c</sub> = Q<sub>u</sub> / V<sub>f</sub>",nf(r.Q,4)+" / "+nf(r.Vf,2),"Área de paso requerida para la velocidad efectiva de flujo adoptada.",(r.Vf<0||r.Vf>0.15)?"La velocidad de paso habitual en rejillas de limpieza manual está entre 0 y 0,15 m/s; valores menores favorecen la sedimentación de arenas.":"");
   t+=fila("Ancho preliminar del canal",r.Bpre,"m",3,"B<sub>prel</sub> = A<sub>c</sub> / H<sub>rh</sub>",nf(r.Ac,4)+" / "+nf(r.H,2),"Ancho antes de descontar el espesor ocupado por los barrotes.");
   t+=fila("Número de espacios entre barrotes (n+1)",r.n1,"",0,"n+1 = A<sub>c</sub> / (H<sub>rh</sub> · z)",nf(r.Ac,4)+" / ("+nf(r.H,2)+" × "+nf(r.z,3)+")","Se redondea al entero más próximo.");
   t+=fila("Número de barrotes (n)",r.nb,"",0,"n = (n+1) − 1",r.n1+" − 1","Siempre hay un espacio más que barrotes.");
@@ -719,7 +796,7 @@ var MODULOS_INFO=[
  {v:"proy",ico:"📈",t:"Proyección poblacional",d:"Métodos lineal, geométrico y exponencial a partir de censos DANE."},
  {v:"q",ico:"🚰",t:"Caudal de diseño",d:"Caudales doméstico, no doméstico, infiltración y conexiones erradas."},
  {v:"rej",ico:"🔲",t:"Diseño de rejilla",d:"Cribado grueso: geometría del canal, barrotes y pérdidas de carga."},
- {v:"m1",ico:"🏖️",t:"Aduccion",d:"Remoción de arenas y sólidos sedimentables."},
+ {v:"m1",ico:"🏖️",t:"Aducción",d:"Remoción de arenas y sólidos sedimentables."},
  {v:"m2",ico:"🌀",t:"Sedimentador primario",d:"Remoción de sólidos suspendidos por gravedad."},
  {v:"m3",ico:"🧫",t:"Tratamiento biológico",d:"Remoción de materia orgánica disuelta y en suspensión."},
  {v:"m4",ico:"🌀",t:"Sedimentador secundario",d:"Clarificación final del efluente biológico."},
@@ -744,7 +821,16 @@ function pintarInicio(){
        '<span class="badge2 '+(ok?"ok":"no")+'">'+(ok?"COMPLETO":"PENDIENTE")+'</span></div>';
   });
   h+='</div>';
+  h+='<div class="acciones" style="justify-content:center;padding-top:0">'+
+     '<input type="file" id="fileImportInicio" accept="application/json" style="display:none" onchange="importarArchivo(this)">'+
+     '<button class="btn-sec" onclick="gid(\'fileImportInicio\').click()">📂 CARGAR PROYECTO (.json)</button>'+
+     '</div>';
   gid("pane-inicio").innerHTML=h;
+}
+function limpiarTodo(){
+  if(!confirm("¿Borrar todos los datos del proyecto actual y empezar en blanco? Esta acción no se puede deshacer.")) return;
+  try{localStorage.removeItem("ptarProyecto");}catch(e){}
+  location.reload();
 }
 
 /* ==========================================================
