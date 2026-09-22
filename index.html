@@ -1409,7 +1409,7 @@ function moduloDatos(){
 }
 
 /* ============================================================
-   1.1 VENTANA CENSO DANE (CORREGIDA)
+   1.1 VENTANA CENSO DANE
    ============================================================ */
 function ventanaDane(){
   actualizarMenu('datos');
@@ -1477,9 +1477,7 @@ function ventanaDane(){
     anioActual = parseInt(anioActual,10);
     if(isNaN(anioActual)) return;
 
-    // FIX 1: Proteger estado.datosHistoricos en caso de ser null o undefined
-    const historicos = Array.isArray(estado.datosHistoricos) ? estado.datosHistoricos : [];
-    const aniosGuardados = new Set(historicos.map(d=>Math.trunc(Number(d.Año))));
+    const aniosGuardados = new Set(estado.datosHistoricos.map(d=>Math.trunc(Number(d.Año))));
 
     obtenerAnios().forEach(anio=>{
       const anioInt = parseInt(anio,10);
@@ -1509,8 +1507,6 @@ function ventanaDane(){
 
 function cargarDane(){
   const ctx = window.__cargarDaneCtx;
-  if(!ctx) return;
-
   const departamento = ctx.inDep.value.trim();
   const municipio = ctx.inMun.value.trim();
   const area = document.getElementById('in-area').value.trim();
@@ -1533,11 +1529,11 @@ function cargarDane(){
   try{
     datosHistoricos = obtenerPoblacion(departamento, municipio, anios, area);
   }catch(err){
-    mostrarError('Error al obtener población', err.message);
+    mostrarError('Error', err.message);
     return;
   }
 
-  if(!datosHistoricos || datosHistoricos.length===0){
+  if(datosHistoricos.length===0){
     mostrarError('Sin información','No se encontraron datos para la selección.');
     return;
   }
@@ -1556,17 +1552,15 @@ function cargarDane(){
   estado.anioFinalProyecto = anioFinal;
 
   try{
-    const resCalculos = generarCalculos(estado.datosHistoricos, anioFinal, actual);
-    if(resCalculos){
-      estado.tablaProyeccion = resCalculos.tablaProyeccion;
-      estado.tablaTasas = resCalculos.tablaTasas;
-      estado.parametros = resCalculos.parametros;
-    }
+    const {tablaProyeccion, tablaTasas, parametros} = generarCalculos(estado.datosHistoricos, anioFinal, actual);
+    estado.tablaProyeccion = tablaProyeccion;
+    estado.tablaTasas = tablaTasas;
+    estado.parametros = parametros;
   }catch(err){
-    console.warn('Error en cálculo de proyección:', err);
+    mostrarError('Error de cálculo', err.message);
+    return;
   }
 
-  // FIX 2: Ejecución garantizada del modal de éxito
   mostrarModal('Datos guardados',
     'Los datos de '+municipio+' fueron cargados correctamente.\n\n'+
     'Tipo de población: '+area+'\n'+
@@ -1577,6 +1571,7 @@ function cargarDane(){
     'La proyección fue generada hasta el año '+anioFinal+'.'
   );
 }
+
 /* ============================================================
    1.2 VENTANA CENSO MANUAL
    ============================================================ */
